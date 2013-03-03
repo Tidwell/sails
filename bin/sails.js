@@ -290,22 +290,18 @@ function createNewApp(appName, templateLang) {
 	generateDir('config/locales');
 	generateFile('config/locales/english.js', 'config/locales/english.js');
 
-	// Different stuff for different view engines
-	if (templateLang === 'jade') {
-		generateFile('jade/index.jade', 'views/home/index.jade');
-		generateFile('jade/404.jade', 'views/404.jade'); // Create 404, 500, and 422/403 pages
-		generateFile('jade/500.jade', 'views/500.jade');
-		generateFile('jade/layout.jade', 'views/layout.jade'); // Create layout
-		generateFile('jade/config.js', 'config/views.js'); // Create views.js config
-	} else {
-		generateFile('ejs/index.ejs', 'views/home/index.ejs');
-		generateFile('ejs/404.ejs', 'views/404.ejs'); // Create 404, 500, and 422/403 pages
-		generateFile('ejs/500.ejs', 'views/500.ejs');
-		generateFile('ejs/layout.ejs', 'views/layout.ejs'); // Create layout
-		generateFile('ejs/config.js', 'config/views.js'); // Create views.js config
-	}
-
-
+	// Generate template files based on chosen template language
+	var templateFiles = [
+		{ source: 'index', target: 'views/home/index' },
+		'404',
+		'500',
+		'layout',
+		{ source: 'config.js', target: 'config/views.js' }
+	];
+	templateFiles.forEach(function(file){
+		var resolvedPath = resolveTemplatePath(file, templateLang);
+		generateFile(resolvedPath.source,resolvedPath.target);
+	});
 
 	// Default app launcher file (for situations where sails lift isn't good enough)
 	generateFile('app.js', '.app.js');
@@ -340,6 +336,45 @@ function createNewApp(appName, templateLang) {
 	fs.writeFileSync(outputPath + '/README.md', '# ' + appName + '\n### a Sails application');
 }
 
+
+/*
+	Used to generate the full source and destination path for a template file to be passed
+	to generateFile.
+
+	If "." is found in argument or source/target, it will not append an extension
+
+	//todo, could generate data instead for the generateType functions
+
+	accepts
+		file
+			(string) map templateLang/file.templateLang => views/file.templateLang
+			(object) map templateLang/file.source.templateLang => file.target.templateLang
+
+		templateLang
+			(string) folder to find the blueprint and file extension - should match
+
+	returns {
+		source: 'fullPath',
+		target: 'fullPath'
+	}
+*/
+
+function resolveTemplatePath(file, templateLang) {
+	if (typeof file === 'string') {
+		var extension = file.indexOf('.') === -1 ? '.' + templateLang : '';
+		return {
+			source: templateLang + '/' + file + extension,
+			target: 'views/' + file + extension
+		};
+	} else if (typeof file === 'object') {
+		var sourceExtension = file.source.indexOf('.') === -1 ? '.' + templateLang : '';
+		var targetExtension = file.target.indexOf('.') === -1 ? '.' + templateLang : '';
+		return {
+			source: templateLang + '/' + file.source + sourceExtension,
+			target: file.target + targetExtension
+		};
+	}
+}
 
 // Display usage
 
